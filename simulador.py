@@ -8,6 +8,7 @@ class SimuladorAFN:
         Obtiene todos los estados que se pueden alcanzar
         utilizando únicamente transiciones epsilon.
         """
+        etiqueta_autor"AFN_Fatis"
 
         resultado = set(estados)
         pendientes = list(estados)
