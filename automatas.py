@@ -1,8 +1,12 @@
 class Automata:
 
     def __init__(self):
+<<<<<<< HEAD
         # Conjuntos
         #Estados
+=======
+        # Conjunto de estados
+>>>>>>> b064cd4a3cbc4b927a2a09feefa9de5cdeebd6ec
         self.estados = set()
 
         # Alfabeto del autómata

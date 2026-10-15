@@ -6,7 +6,7 @@ from minimizacion import MinimizadorAFD
 from simulador import SimuladorAFN
 from simulador_afd import SimuladorAFD
 import math
-
+#diseño de iinterfaz
 
 class InterfazAutomatas:
 
