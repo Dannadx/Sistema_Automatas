@@ -1,5 +1,5 @@
 from automatas import Automata
-
+#Creación de la clase 
 
 class AFN(Automata):
 
