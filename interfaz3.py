@@ -515,7 +515,7 @@ class InterfazAutomatas:
         self.afd_minimo = None
         self.mostrar_afn()
         messagebox.showinfo("Éxito", "Estructura del AFN creada correctamente.")
-
+#MÉTODO PARA AGREGAR TRANSICIONES
     def agregar_transicion(self):
         if self.afn is None:
             messagebox.showwarning("Advertencia", "Primero debe crear la estructura del AFN.")
@@ -536,6 +536,24 @@ class InterfazAutomatas:
         if simbolo not in self.afn.alfabeto and simbolo != "ε":
             messagebox.showwarning("Advertencia", f"El símbolo '{simbolo}' no pertenece al alfabeto asignado.")
             return
+
+        # VALIDAR DUPLICADO: (origen, símbolo, destino)
+        destinos_existentes = self.afn.transiciones.get(origen, {}).get(simbolo, set())
+        if destino in destinos_existentes:
+            messagebox.showerror(
+                "Error de transición duplicada",
+                f"La transición ({origen}, {simbolo}, {destino}) ya existe."
+            )
+            return
+
+        self.afn.agregar_transicion(origen, simbolo, destino)
+        self.afd = None
+        self.afd_minimo = None
+
+        self.txt_origen.delete(0, tk.END)
+        self.txt_simbolo.delete(0, tk.END)
+        self.txt_destino.delete(0, tk.END)
+        self.mostrar_afn()
 
         self.afn.agregar_transicion(origen, simbolo, destino)
         self.afd = None
