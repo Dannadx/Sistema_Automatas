@@ -1,5 +1,6 @@
 from automatas import Automata
-#Creación de la clase 
+#Creación de la clase  
+#automatas finitos no determinísticos
 
 class AFN(Automata):
 
