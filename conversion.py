@@ -1,6 +1,6 @@
 from automatas import Automata
 
-
+#prueba coversion
 class ConvertidorAFN_AFD:
 
     def __init__(self, afn):
