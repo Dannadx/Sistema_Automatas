@@ -167,7 +167,7 @@ while True:
             afd_minimo.mostrar()
 
     # --------------------------------------
-    # OPCIÓN 9
+    # OPCIÓN 9 Carlos 
     # --------------------------------------
 
     elif opcion == "9":
@@ -177,7 +177,7 @@ while True:
         break
 
     # --------------------------------------
-    # OPCIÓN INCORRECTA
+    # OPCIÓN INCORRECTA Prueba de funcionamiento 
     # --------------------------------------
 
     else:
