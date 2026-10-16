@@ -1,0 +1,405 @@
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+from pathlib import Path
+import re
+
+from database import initialize_database, query_logs, get_stats
+from log_manager import log_event, export_logs
+from regex_engine import validate_string, find_matches, test_many
+from automata import regex_to_nfa, nfa_to_dfa, minimize_dfa, validate_with_dfa, transition_lines
+
+BG = "#101827"
+PANEL = "#182437"
+PANEL2 = "#202F45"
+TEXT = "#E8EEF7"
+MUTED = "#A9B7CA"
+ACCENT = "#62D6C5"
+RED = "#FF7777"
+YELLOW = "#F7C66A"
+
+class RegexLabApp(tk.Tk):
+    def _init_(self):
+        super()._init_()
+        initialize_database()
+        self.title("REGEX LAB | Analizador de expresiones y logs")
+        self.geometry("1180x780")
+        self.minsize(980, 650)
+        self.configure(bg=BG)
+        self.current_dfa = None
+        self.log_event("INFO", "SISTEMA", "Aplicación iniciada")
+        self._style()
+        self._build()
+
+    def log_event(self, level, category, message, details=""):
+        log_event(level, category, message, details)
+
+    def _style(self):
+        style = ttk.Style(self)
+        style.theme_use("clam")
+        style.configure(".", font=("Segoe UI", 10))
+        style.configure("TFrame", background=BG)
+        style.configure("Panel.TFrame", background=PANEL)
+        style.configure("TLabel", background=BG, foreground=TEXT)
+        style.configure("Muted.TLabel", background=BG, foreground=MUTED)
+        style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 19, "bold"))
+        style.configure("Sub.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 10))
+        style.configure("TButton", padding=8, background=PANEL2, foreground=TEXT)
+        style.map("TButton", background=[("active", "#2C4564")])
+        style.configure("TEntry", fieldbackground=PANEL2, foreground=TEXT, insertcolor=TEXT)
+        style.configure("TNotebook", background=BG, borderwidth=0)
+        style.configure("TNotebook.Tab", padding=(16, 10), background=PANEL2, foreground=TEXT)
+        style.map("TNotebook.Tab", background=[("selected", "#2C4564")])
+        style.configure("Treeview", background=PANEL, fieldbackground=PANEL, foreground=TEXT, rowheight=27)
+        style.configure("Treeview.Heading", background=PANEL2, foreground=TEXT, font=("Segoe UI", 9, "bold"))
+        style.map("Treeview", background=[("selected", "#285B67")])
+
+    def _build(self):
+        header = tk.Frame(self, bg=BG)
+        header.pack(fill="x", padx=22, pady=(18, 8))
+        tk.Label(header, text="REGEX LAB", bg=BG, fg=ACCENT,
+                 font=("Segoe UI", 23, "bold")).pack(side="left")
+        tk.Label(header, text="  |  Motor de patrones · Autómatas · Auditoría de eventos",
+                 bg=BG, fg=MUTED, font=("Segoe UI", 10)).pack(side="left", pady=(8, 0))
+
+        self.stats_frame = tk.Frame(self, bg=BG)
+        self.stats_frame.pack(fill="x", padx=22, pady=8)
+        self.stats_labels = {}
+        for key, label in [("total", "EVENTOS REGISTRADOS"), ("errors", "ERRORES CRÍTICOS"), ("warnings", "ADVERTENCIAS"), ("info", "INFORMACIÓN")]:
+            card = tk.Frame(self.stats_frame, bg=PANEL, padx=15, pady=10)
+            card.pack(side="left", fill="x", expand=True, padx=(0, 10))
+            tk.Label(card, text=label, bg=PANEL, fg=MUTED, font=("Segoe UI", 8, "bold")).pack(anchor="w")
+            value = tk.Label(card, text="0", bg=PANEL, fg=ACCENT, font=("Segoe UI", 21, "bold"))
+            value.pack(anchor="w", pady=(3, 0))
+            self.stats_labels[key] = value
+
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill="both", expand=True, padx=22, pady=(8, 18))
+        self.tab_regex = ttk.Frame(self.notebook, padding=16)
+        self.tab_automata = ttk.Frame(self.notebook, padding=16)
+        self.tab_logs = ttk.Frame(self.notebook, padding=16)
+        self.notebook.add(self.tab_regex, text="  Regex Lab  ")
+        self.notebook.add(self.tab_automata, text="  Generador de autómatas  ")
+        self.notebook.add(self.tab_logs, text="  Centro de logs  ")
+        self._build_regex()
+        self._build_automata()
+        self._build_logs()
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def label(self, parent, text, **kwargs):
+        return ttk.Label(parent, text=text, **kwargs)
+
+    def _build_regex(self):
+        tab = self.tab_regex
+        self.label(tab, "Validación y búsqueda de patrones", style="Title.TLabel").pack(anchor="w")
+        self.label(tab, "Usa la sintaxis de expresiones regulares de Python. Cada acción importante se guarda automáticamente en el historial.",
+                   style="Sub.TLabel").pack(anchor="w", pady=(3, 14))
+
+        row = ttk.Frame(tab)
+        row.pack(fill="x")
+        self.regex_entry = ttk.Entry(row)
+        self.regex_entry.insert(0, r"^[A-Z]{3}\d{4}$")
+        self.regex_entry.pack(side="left", fill="x", expand=True, ipady=5)
+        ttk.Button(row, text="Probar Regex", command=self.regex_info).pack(side="left", padx=(8, 0))
+
+        columns = ttk.Frame(tab)
+        columns.pack(fill="both", expand=True, pady=(14, 0))
+        left = ttk.Frame(columns)
+        left.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        right = ttk.Frame(columns)
+        right.pack(side="left", fill="both", expand=True)
+
+        self.label(left, "Validación de cadena completa").pack(anchor="w", pady=(0, 5))
+        self.string_entry = ttk.Entry(left)
+        self.string_entry.insert(0, "ABC1234")
+        self.string_entry.pack(fill="x", ipady=5)
+        ttk.Button(left, text="Validar cadena", command=self.validate_one).pack(anchor="w", pady=8)
+
+        self.label(left, "Prueba múltiple (una cadena por línea)").pack(anchor="w", pady=(12, 5))
+        self.multi_text = tk.Text(left, height=9, bg=PANEL2, fg=TEXT, insertbackground=TEXT,
+                                  relief="flat", padx=10, pady=8, font=("Consolas", 10))
+        self.multi_text.pack(fill="both", expand=True)
+        self.multi_text.insert("1.0", "ABC1234\nXYZ9876\nAB1234\nDEF5678")
+
+        ttk.Button(left, text="Validar todas las cadenas", command=self.validate_many).pack(anchor="w", pady=8)
+
+        self.label(right, "Buscar coincidencias dentro de un texto").pack(anchor="w", pady=(0, 5))
+        self.search_text = tk.Text(right, height=8, bg=PANEL2, fg=TEXT, insertbackground=TEXT,
+                                   relief="flat", padx=10, pady=8, font=("Consolas", 10))
+        self.search_text.pack(fill="x")
+        self.search_text.insert("1.0", "Eventos: ABC1234, XYZ9876 y AB1234. Código DEF5678.")
+        ttk.Button(right, text="Buscar coincidencias", command=self.search_matches).pack(anchor="w", pady=8)
+        self.regex_output = tk.Text(right, height=12, bg="#0C1320", fg=ACCENT, insertbackground=TEXT,
+                                    relief="flat", padx=10, pady=8, font=("Consolas", 10), wrap="word")
+        self.regex_output.pack(fill="both", expand=True)
+        self.regex_output.insert("1.0", "Los resultados aparecerán aquí.")
+        self.regex_output.configure(state="disabled")
+
+    def set_output(self, widget, text):
+        widget.configure(state="normal")
+        widget.delete("1.0", "end")
+        widget.insert("1.0", text)
+        widget.configure(state="disabled")
+
+    def regex_info(self):
+        expr = self.regex_entry.get()
+        try:
+            compiled = re.compile(expr)
+            msg = f"Regex válida\nLongitud: {len(expr)} caracteres\nFlags: {compiled.flags}\n\nPatrón:\n{expr}"
+            self.log_event("INFO", "REGEX", "Expresión regular compilada correctamente", expr)
+            self.set_output(self.regex_output, msg)
+        except re.error as exc:
+            self.log_event("ERROR", "REGEX", "Error de sintaxis en Regex", f"{expr} | {exc}")
+            messagebox.showerror("Regex inválida", str(exc))
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def validate_one(self):
+        expr, value = self.regex_entry.get(), self.string_entry.get()
+        try:
+            ok = validate_string(expr, value)
+            level = "INFO" if ok else "WARNING"
+            result = "VÁLIDA" if ok else "NO VÁLIDA"
+            self.log_event(level, "VALIDACIÓN", f"Cadena {result.lower()}", f"Regex={expr} | Cadena={value}")
+            self.set_output(self.regex_output, f"RESULTADO: {result}\n\nCadena: {value}\nExpresión: {expr}\n\nLa cadena {'cumple' if ok else 'no cumple'} completamente el patrón.")
+        except ValueError as exc:
+            self.log_event("ERROR", "REGEX", "No se pudo validar la cadena", str(exc))
+            messagebox.showerror("Error", str(exc))
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def validate_many(self):
+        expr = self.regex_entry.get()
+        lines = self.multi_text.get("1.0", "end-1c").splitlines()
+        try:
+            results = test_many(expr, lines)
+            valid = sum(ok for _, ok in results)
+            output = [f"Resumen: {valid} válidas de {len(results)} cadenas\n"]
+            output.extend([f"[{'OK' if ok else 'NO'}] {line}" for line, ok in results])
+            self.set_output(self.regex_output, "\n".join(output))
+            self.log_event("INFO", "VALIDACIÓN", "Validación múltiple ejecutada",
+                           f"Total={len(results)} | Válidas={valid} | Regex={expr}")
+        except ValueError as exc:
+            self.log_event("ERROR", "REGEX", "Falló la validación múltiple", str(exc))
+            messagebox.showerror("Error", str(exc))
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def search_matches(self):
+        expr, text = self.regex_entry.get(), self.search_text.get("1.0", "end-1c")
+        try:
+            matches = find_matches(expr, text)
+            output = [f"Coincidencias encontradas: {len(matches)}\n"]
+            output.extend([f"{i}. {m['match']!r} | posiciones {m['start']}–{m['end']}" for i, m in enumerate(matches, 1)])
+            if not matches:
+                output.append("No se encontraron coincidencias.")
+            self.set_output(self.regex_output, "\n".join(output))
+            self.log_event("INFO", "BÚSQUEDA", "Búsqueda de coincidencias ejecutada",
+                           f"Coincidencias={len(matches)} | Regex={expr}")
+        except ValueError as exc:
+            self.log_event("ERROR", "REGEX", "Falló la búsqueda de coincidencias", str(exc))
+            messagebox.showerror("Error", str(exc))
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def _build_automata(self):
+        tab = self.tab_automata
+        self.label(tab, "Conversión de Regex a autómatas", style="Title.TLabel").pack(anchor="w")
+        self.label(tab, "Genera un AFN por Thompson, conviértelo a AFD y aplica minimización. El dibujo presenta una vista esquemática de los estados y transiciones.",
+                   style="Sub.TLabel").pack(anchor="w", pady=(3, 12))
+        row = ttk.Frame(tab)
+        row.pack(fill="x")
+        self.automata_entry = ttk.Entry(row)
+        self.automata_entry.insert(0, "(a|b)*abb")
+        self.automata_entry.pack(side="left", fill="x", expand=True, ipady=5)
+        ttk.Button(row, text="Generar AFD mínimo", command=self.generate_automaton).pack(side="left", padx=(8, 0))
+        ttk.Button(row, text="Validar con AFD", command=self.validate_automaton).pack(side="left", padx=(8, 0))
+
+        self.automata_test = ttk.Entry(tab)
+        self.automata_test.insert(0, "aabb")
+        self.automata_test.pack(fill="x", pady=(10, 8), ipady=4)
+
+        body = ttk.Frame(tab)
+        body.pack(fill="both", expand=True)
+        self.canvas = tk.Canvas(body, bg="#0C1320", highlightthickness=0, height=350)
+        self.canvas.pack(side="left", fill="both", expand=True, padx=(0, 10))
+        self.automata_output = tk.Text(body, width=35, bg=PANEL, fg=TEXT, relief="flat",
+                                       padx=10, pady=8, font=("Consolas", 9), wrap="word")
+        self.automata_output.pack(side="left", fill="y")
+        self.automata_output.insert("1.0", "Genera un autómata para ver sus transiciones.")
+        self.automata_output.configure(state="disabled")
+
+    def generate_automaton(self):
+        expr = self.automata_entry.get()
+        try:
+            nfa = regex_to_nfa(expr)
+            dfa = nfa_to_dfa(nfa)
+            minimized = minimize_dfa(dfa)
+            self.current_dfa = minimized
+            lines = [
+                f"Regex: {expr}",
+                f"Estados AFN: {len(nfa.states)}",
+                f"Estados AFD: {len(dfa['states'])}",
+                f"Estados AFD mínimo: {len(minimized['states'])}",
+                f"Alfabeto: {minimized['alphabet']}",
+                f"Estado inicial: q{minimized['start']}",
+                f"Estados finales: {sorted(minimized['accepting'])}",
+                "", "TRANSICIONES:"
+            ] + transition_lines(minimized)
+            self.set_output(self.automata_output, "\n".join(lines))
+            self.draw_automaton(minimized)
+            self.log_event("INFO", "AUTÓMATA", "AFN, AFD y AFD mínimo generados",
+                           f"Regex={expr} | AFN={len(nfa.states)} | AFD={len(dfa['states'])} | Mínimo={len(minimized['states'])}")
+        except Exception as exc:
+            self.log_event("ERROR", "AUTÓMATA", "No se pudo generar el autómata", f"{expr} | {exc}")
+            messagebox.showerror("Error al generar autómata", str(exc))
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def validate_automaton(self):
+        if self.current_dfa is None:
+            messagebox.showwarning("Autómata requerido", "Primero genera el AFD mínimo.")
+            return
+        value = self.automata_test.get()
+        ok = validate_with_dfa(self.current_dfa, value)
+        self.set_output(self.automata_output, f"Cadena: {value}\nResultado: {'ACEPTADA' if ok else 'RECHAZADA'}\n\n" + "\n".join(transition_lines(self.current_dfa)))
+        self.log_event("INFO" if ok else "WARNING", "AUTÓMATA",
+                       f"Cadena {'aceptada' if ok else 'rechazada'} por el AFD",
+                       f"Cadena={value}")
+        self.refresh_stats()
+        self.refresh_logs()
+
+    def draw_automaton(self, dfa):
+        self.canvas.delete("all")
+        states = dfa["states"]
+        if len(states) > 14:
+            self.canvas.create_text(20, 20, anchor="nw", fill=YELLOW,
+                                    text=f"El AFD tiene {len(states)} estados. Se muestra la tabla de transiciones a la derecha.")
+            return
+        width = max(self.canvas.winfo_width(), 600)
+        height = max(self.canvas.winfo_height(), 330)
+        n = len(states)
+        positions = {}
+        cx, cy = width / 2, height / 2
+        import math
+        radius = min(width, height) * 0.34
+        for i, state in enumerate(states):
+            angle = -math.pi / 2 + (2 * math.pi * i / max(n, 1))
+            positions[state] = (cx + radius * math.cos(angle), cy + radius * math.sin(angle))
+
+        # Dibujar transiciones antes de los estados
+        for (src, symbol), dst in dfa["transitions"].items():
+            x1, y1 = positions[src]
+            x2, y2 = positions[dst]
+            if src == dst:
+                self.canvas.create_arc(x1-22, y1-38, x1+22, y1+4, start=20, extent=320,
+                                       style="arc", outline=ACCENT, width=2)
+                self.canvas.create_text(x1, y1-39, text=symbol, fill=TEXT, font=("Consolas", 9))
+            else:
+                self.canvas.create_line(x1, y1, x2, y2, fill="#57718D", width=1.5,
+                                        arrow=tk.LAST, arrowshape=(8, 10, 4))
+                mx, my = (x1+x2)/2, (y1+y2)/2
+                self.canvas.create_text(mx, my-8, text=symbol, fill=ACCENT, font=("Consolas", 9))
+        sx, sy = positions[dfa["start"]]
+        self.canvas.create_line(sx-55, sy, sx-24, sy, fill=ACCENT, width=2, arrow=tk.LAST)
+        for state, (x, y) in positions.items():
+            fill = "#174C4B" if state in dfa["accepting"] else PANEL2
+            self.canvas.create_oval(x-22, y-22, x+22, y+22, fill=fill, outline=ACCENT if state in dfa["accepting"] else "#7C91AA", width=2)
+            if state in dfa["accepting"]:
+                self.canvas.create_oval(x-17, y-17, x+17, y+17, outline=ACCENT, width=1)
+            self.canvas.create_text(x, y, text=f"q{state}", fill=TEXT, font=("Segoe UI", 9, "bold"))
+
+    def _build_logs(self):
+        tab = self.tab_logs
+        self.label(tab, "Centro de auditoría de eventos", style="Title.TLabel").pack(anchor="w")
+        self.label(tab, "Los registros se guardan automáticamente en SQLite. Puedes filtrarlos y exportar el resultado.",
+                   style="Sub.TLabel").pack(anchor="w", pady=(3, 12))
+
+        filters = ttk.Frame(tab)
+        filters.pack(fill="x", pady=(0, 8))
+        self.level_var = tk.StringVar(value="Todos")
+        self.category_var = tk.StringVar(value="Todos")
+        self.log_search_var = tk.StringVar()
+        ttk.Label(filters, text="Nivel:").pack(side="left", padx=(0, 5))
+        ttk.Combobox(filters, textvariable=self.level_var, values=["Todos", "INFO", "WARNING", "ERROR", "CRITICAL"],
+                     state="readonly", width=12).pack(side="left", padx=(0, 12))
+        ttk.Label(filters, text="Categoría:").pack(side="left", padx=(0, 5))
+        ttk.Combobox(filters, textvariable=self.category_var,
+                     values=["Todos", "SISTEMA", "REGEX", "VALIDACIÓN", "BÚSQUEDA", "AUTÓMATA"],
+                     state="readonly", width=14).pack(side="left", padx=(0, 12))
+        ttk.Entry(filters, textvariable=self.log_search_var).pack(side="left", fill="x", expand=True, padx=(0, 8), ipady=4)
+        ttk.Button(filters, text="Filtrar", command=self.refresh_logs).pack(side="left")
+
+        actions = ttk.Frame(tab)
+        actions.pack(fill="x", pady=(0, 8))
+        ttk.Button(actions, text="Exportar CSV", command=lambda: self.export("csv")).pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="Exportar TXT", command=lambda: self.export("txt")).pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="Actualizar", command=self.refresh_logs).pack(side="left")
+
+        cols = ("id", "timestamp", "level", "category", "message", "details")
+        self.logs_tree = ttk.Treeview(tab, columns=cols, show="headings")
+        labels = {"id": "ID", "timestamp": "Fecha y hora", "level": "Nivel",
+                  "category": "Categoría", "message": "Evento", "details": "Detalles"}
+        widths = {"id": 55, "timestamp": 175, "level": 90, "category": 105, "message": 240, "details": 330}
+        for col in cols:
+            self.logs_tree.heading(col, text=labels[col])
+            self.logs_tree.column(col, width=widths[col], anchor="w")
+        self.logs_tree.tag_configure("ERROR", foreground=RED)
+        self.logs_tree.tag_configure("WARNING", foreground=YELLOW)
+        self.logs_tree.tag_configure("INFO", foreground=ACCENT)
+        scroll_y = ttk.Scrollbar(tab, orient="vertical", command=self.logs_tree.yview)
+        scroll_x = ttk.Scrollbar(tab, orient="horizontal", command=self.logs_tree.xview)
+        self.logs_tree.configure(yscrollcommand=scroll_y.set, xscrollcommand=scroll_x.set)
+        self.logs_tree.pack(fill="both", expand=True, side="top")
+        scroll_y.pack(side="right", fill="y")
+        scroll_x.pack(fill="x")
+
+    def refresh_logs(self):
+        if not hasattr(self, "logs_tree"):
+            return
+        rows = query_logs(
+            level=self.level_var.get(),
+            category=self.category_var.get(),
+            search=self.log_search_var.get().strip(),
+            limit=3000
+        )
+        for item in self.logs_tree.get_children():
+            self.logs_tree.delete(item)
+        for row in rows:
+            self.logs_tree.insert("", "end", values=tuple(row[c] for c in
+                ("id", "timestamp", "level", "category", "message", "details")),
+                tags=(row["level"],))
+
+    def refresh_stats(self):
+        stats = get_stats()
+        for key, value in stats.items():
+            if key in self.stats_labels:
+                self.stats_labels[key].configure(text=str(value))
+
+    def export(self, format_name):
+        rows = query_logs(
+            level=self.level_var.get(),
+            category=self.category_var.get(),
+            search=self.log_search_var.get().strip(),
+            limit=10000
+        )
+        if not rows:
+            messagebox.showinfo("Sin datos", "No hay registros que exportar con los filtros actuales.")
+            return
+        ext = ".csv" if format_name == "csv" else ".txt"
+        path = filedialog.asksaveasfilename(
+            title="Guardar reporte de logs",
+            defaultextension=ext,
+            filetypes=[("CSV", ".csv")] if format_name == "csv" else [("Texto", ".txt")]
+        )
+        if not path:
+            return
+        try:
+            export_logs(rows, path, format_name)
+            self.log_event("INFO", "SISTEMA", "Reporte de logs exportado", f"Archivo={path} | Filas={len(rows)}")
+            messagebox.showinfo("Exportación completada", f"Se exportaron {len(rows)} registros.")
+            self.refresh_stats()
+            self.refresh_logs()
+        except OSError as exc:
+            self.log_event("ERROR", "SISTEMA", "Falló la exportación de logs", str(exc))
+            messagebox.showerror("Error de exportación", str(exc))
