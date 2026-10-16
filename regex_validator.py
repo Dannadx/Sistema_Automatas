@@ -1,33 +1,40 @@
-
 import re
 
 
-def validar_regex(expresion):
-    """Comprueba si la expresión regular tiene una sintaxis válida."""
+def compilar_regex(expresion):
+    """Compila la expresión regular y detecta errores."""
     try:
-        re.compile(expresion)
-        return True, "Expresión regular válida."
+        return re.compile(expresion)
     except re.error as error:
-        return False, f"Error en la expresión regular: {error}"
+        raise ValueError(f"Expresión regular inválida: {error}")
 
 
 def validar_cadena(expresion, cadena):
-    """Valida toda la cadena, no solamente una parte."""
-    try:
-        patron = re.compile(expresion)
-        return patron.fullmatch(cadena) is not None
-    except re.error:
-        return False
+    """Valida si toda la cadena cumple la expresión regular."""
+    patron = compilar_regex(expresion)
+    return patron.fullmatch(cadena) is not None
 
 
-def probar_cadenas(expresion, cadenas):
-    """Devuelve el resultado de cada cadena."""
-    resultados = []
+def buscar_coincidencias(expresion, texto):
+    """Busca todas las coincidencias dentro de un texto."""
+    patron = compilar_regex(expresion)
+    return [
+        {
+            "texto": coincidencia.group(),
+            "inicio": coincidencia.start(),
+            "fin": coincidencia.end()
+        }
+        for coincidencia in patron.finditer(texto)
+    ]
 
-    for cadena in cadenas:
-        resultados.append({
-            "cadena": cadena,
-            "valida": validar_cadena(expresion, cadena)
-        })
 
-    return resultados
+def obtener_informacion(expresion):
+    """Devuelve información básica de la expresión."""
+    patron = compilar_regex(expresion)
+
+    return {
+        "expresion": expresion,
+        "longitud": len(expresion),
+        "flags": patron.flags
+    }
+
