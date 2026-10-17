@@ -1,10 +1,10 @@
 import sqlite3
 from pathlib import Path
-from datetime import datetime
+import sqlite3
 
-BASE_DIR = Path(_file_).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-DB_PATH = DATA_DIR / "regex_lab.db"
+BASE_DIR = Path(__file__).resolve().parent
+DB_DIR = BASE_DIR / "data"
+DB_PATH = DB_DIR / "regex_lab.db"
 
 def get_connection():
     DATA_DIR.mkdir(parents=True, exist_ok=True)
