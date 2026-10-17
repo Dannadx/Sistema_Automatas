@@ -8,18 +8,18 @@ from log_manager import log_event, export_logs
 from regex_engine import validate_string, find_matches, test_many
 from automata import regex_to_nfa, nfa_to_dfa, minimize_dfa, validate_with_dfa, transition_lines
 
-BG = "#101827"
-PANEL = "#182437"
-PANEL2 = "#202F45"
-TEXT = "#E8EEF7"
-MUTED = "#A9B7CA"
-ACCENT = "#62D6C5"
-RED = "#FF7777"
-YELLOW = "#F7C66A"
+BG = "#0F172A"
+PANEL = "#1E293B"
+PANEL2 = "#334155"
+TEXT = "#F1F5F9"
+MUTED = "#CBD5E1"
+ACCENT = "#38BDF8"
+RED = "#F43F5E"
+YELLOW = "#FBBF24"
 
 class RegexLabApp(tk.Tk):
-    def _init_(self):
-        super()._init_()
+    def __init__(self):
+        super().__init__()
         initialize_database()
         self.title("REGEX LAB | Analizador de expresiones y logs")
         self.geometry("1180x780")
@@ -44,14 +44,14 @@ class RegexLabApp(tk.Tk):
         style.configure("Title.TLabel", background=BG, foreground=TEXT, font=("Segoe UI", 19, "bold"))
         style.configure("Sub.TLabel", background=BG, foreground=MUTED, font=("Segoe UI", 10))
         style.configure("TButton", padding=8, background=PANEL2, foreground=TEXT)
-        style.map("TButton", background=[("active", "#2C4564")])
+        style.map("TButton", background=[("active", "#475569")])
         style.configure("TEntry", fieldbackground=PANEL2, foreground=TEXT, insertcolor=TEXT)
         style.configure("TNotebook", background=BG, borderwidth=0)
         style.configure("TNotebook.Tab", padding=(16, 10), background=PANEL2, foreground=TEXT)
-        style.map("TNotebook.Tab", background=[("selected", "#2C4564")])
+        style.map("TNotebook.Tab", background=[("selected", "#475569")])
         style.configure("Treeview", background=PANEL, fieldbackground=PANEL, foreground=TEXT, rowheight=27)
         style.configure("Treeview.Heading", background=PANEL2, foreground=TEXT, font=("Segoe UI", 9, "bold"))
-        style.map("Treeview", background=[("selected", "#285B67")])
+        style.map("Treeview", background=[("selected", "#075985")])
 
     def _build(self):
         header = tk.Frame(self, bg=BG)
@@ -129,7 +129,7 @@ class RegexLabApp(tk.Tk):
         self.search_text.pack(fill="x")
         self.search_text.insert("1.0", "Eventos: ABC1234, XYZ9876 y AB1234. Código DEF5678.")
         ttk.Button(right, text="Buscar coincidencias", command=self.search_matches).pack(anchor="w", pady=8)
-        self.regex_output = tk.Text(right, height=12, bg="#0C1320", fg=ACCENT, insertbackground=TEXT,
+        self.regex_output = tk.Text(right, height=12, bg="#0B1120", fg=ACCENT, insertbackground=TEXT,
                                     relief="flat", padx=10, pady=8, font=("Consolas", 10), wrap="word")
         self.regex_output.pack(fill="both", expand=True)
         self.regex_output.insert("1.0", "Los resultados aparecerán aquí.")
@@ -221,7 +221,7 @@ class RegexLabApp(tk.Tk):
 
         body = ttk.Frame(tab)
         body.pack(fill="both", expand=True)
-        self.canvas = tk.Canvas(body, bg="#0C1320", highlightthickness=0, height=350)
+        self.canvas = tk.Canvas(body, bg="#0B1120", highlightthickness=0, height=350)
         self.canvas.pack(side="left", fill="both", expand=True, padx=(0, 10))
         self.automata_output = tk.Text(body, width=35, bg=PANEL, fg=TEXT, relief="flat",
                                        padx=10, pady=8, font=("Consolas", 9), wrap="word")
@@ -296,15 +296,15 @@ class RegexLabApp(tk.Tk):
                                        style="arc", outline=ACCENT, width=2)
                 self.canvas.create_text(x1, y1-39, text=symbol, fill=TEXT, font=("Consolas", 9))
             else:
-                self.canvas.create_line(x1, y1, x2, y2, fill="#57718D", width=1.5,
+                self.canvas.create_line(x1, y1, x2, y2, fill="#64748B", width=1.5,
                                         arrow=tk.LAST, arrowshape=(8, 10, 4))
                 mx, my = (x1+x2)/2, (y1+y2)/2
                 self.canvas.create_text(mx, my-8, text=symbol, fill=ACCENT, font=("Consolas", 9))
         sx, sy = positions[dfa["start"]]
         self.canvas.create_line(sx-55, sy, sx-24, sy, fill=ACCENT, width=2, arrow=tk.LAST)
         for state, (x, y) in positions.items():
-            fill = "#174C4B" if state in dfa["accepting"] else PANEL2
-            self.canvas.create_oval(x-22, y-22, x+22, y+22, fill=fill, outline=ACCENT if state in dfa["accepting"] else "#7C91AA", width=2)
+            fill = "#064E3B" if state in dfa["accepting"] else PANEL2
+            self.canvas.create_oval(x-22, y-22, x+22, y+22, fill=fill, outline=ACCENT if state in dfa["accepting"] else "#94A3B8", width=2)
             if state in dfa["accepting"]:
                 self.canvas.create_oval(x-17, y-17, x+17, y+17, outline=ACCENT, width=1)
             self.canvas.create_text(x, y, text=f"q{state}", fill=TEXT, font=("Segoe UI", 9, "bold"))
@@ -334,7 +334,8 @@ class RegexLabApp(tk.Tk):
         actions.pack(fill="x", pady=(0, 8))
         ttk.Button(actions, text="Exportar CSV", command=lambda: self.export("csv")).pack(side="left", padx=(0, 8))
         ttk.Button(actions, text="Exportar TXT", command=lambda: self.export("txt")).pack(side="left", padx=(0, 8))
-        ttk.Button(actions, text="Actualizar", command=self.refresh_logs).pack(side="left")
+        ttk.Button(actions, text="Actualizar", command=self.refresh_logs).pack(side="left", padx=(0, 8))
+        ttk.Button(actions, text="Probar error CRÍTICO", command=self.simulate_critical_error).pack(side="left")
 
         cols = ("id", "timestamp", "level", "category", "message", "details")
         self.logs_tree = ttk.Treeview(tab, columns=cols, show="headings")
@@ -344,7 +345,8 @@ class RegexLabApp(tk.Tk):
         for col in cols:
             self.logs_tree.heading(col, text=labels[col])
             self.logs_tree.column(col, width=widths[col], anchor="w")
-        self.logs_tree.tag_configure("ERROR", foreground=RED)
+        self.logs_tree.tag_configure("CRITICAL", foreground="#F43F5E", font=("Segoe UI", 10, "bold"))
+        self.logs_tree.tag_configure("ERROR", foreground=RED, font=("Segoe UI", 10, "bold"))
         self.logs_tree.tag_configure("WARNING", foreground=YELLOW)
         self.logs_tree.tag_configure("INFO", foreground=ACCENT)
         scroll_y = ttk.Scrollbar(tab, orient="vertical", command=self.logs_tree.yview)
@@ -353,6 +355,27 @@ class RegexLabApp(tk.Tk):
         self.logs_tree.pack(fill="both", expand=True, side="top")
         scroll_y.pack(side="right", fill="y")
         scroll_x.pack(fill="x")
+
+    def simulate_critical_error(self):
+        """Registra un evento crítico de prueba sin dañar archivos ni datos."""
+        confirmed = messagebox.askyesno(
+            "Simulación de error crítico",
+            "Se registrará un evento CRITICAL de prueba para comprobar el sistema de logs.\n\n"
+            "No se borrarán datos ni se dañará la aplicación. ¿Continuar?"
+        )
+        if not confirmed:
+            return
+        self.log_event(
+            "CRITICAL", "SISTEMA",
+            "SIMULACIÓN: componente esencial no disponible",
+            "Evento de prueba controlado; no representa una falla real del equipo."
+        )
+        self.refresh_stats()
+        self.refresh_logs()
+        messagebox.showerror(
+            "ERROR CRÍTICO DE PRUEBA",
+            "Se registró un evento CRITICAL.\nAbre el Centro de logs y filtra por CRITICAL para comprobarlo."
+        )
 
     def refresh_logs(self):
         if not hasattr(self, "logs_tree"):
@@ -390,7 +413,7 @@ class RegexLabApp(tk.Tk):
         path = filedialog.asksaveasfilename(
             title="Guardar reporte de logs",
             defaultextension=ext,
-            filetypes=[("CSV", ".csv")] if format_name == "csv" else [("Texto", ".txt")]
+            filetypes=[("CSV", "*.csv")] if format_name == "csv" else [("Texto", "*.txt")]
         )
         if not path:
             return
