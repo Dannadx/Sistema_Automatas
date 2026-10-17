@@ -2,7 +2,7 @@ import csv
 from pathlib import Path
 from database import insert_log, query_logs
 
-BASE_DIR = Path(_file_).resolve().parent
+BASE_DIR = Path(__file__).resolve().parent
 EXPORT_DIR = BASE_DIR / "exports"
 
 def log_event(level, category, message, details=""):
