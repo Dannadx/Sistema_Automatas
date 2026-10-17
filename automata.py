@@ -154,7 +154,7 @@ def move(nfa, states, symbol):
     for s in states:
         result.update(nfa.transitions.get((s, symbol), set()))
     return result
-
+#funcion alfabeto
 def nfa_to_dfa(nfa):
     alphabet = sorted(nfa.alphabet)
     start = epsilon_closure(nfa, {nfa.start})
