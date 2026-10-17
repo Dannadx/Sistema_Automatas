@@ -426,3 +426,7 @@ class RegexLabApp(tk.Tk):
         except OSError as exc:
             self.log_event("ERROR", "SISTEMA", "Falló la exportación de logs", str(exc))
             messagebox.showerror("Error de exportación", str(exc))
+
+if __name__ == "__main__":
+    app = RegexLabApp()
+    app.mainloop()
