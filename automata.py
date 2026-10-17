@@ -3,7 +3,7 @@ Conversión didáctica de Regex a AFN por Thompson y luego a AFD por subconjunto
 Soporta: símbolos literales, concatenación, |, *, +, ?, paréntesis y escape con \\.
 No soporta clases como [a-z], cuantificadores {m,n}, lookarounds ni clases \\d/\\w.
 """
-
+#CODIGO INICIAL 
 EPSILON = "ε"
 CONCAT = "·"
 
