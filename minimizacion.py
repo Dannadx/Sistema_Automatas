@@ -29,6 +29,7 @@ class MinimizadorAFD:
 
     def minimizar(self):
 
+        #copiar los estados NUEVO
         # Copiar los estados
         estados = list(self.afd.estados)
 
