@@ -92,7 +92,7 @@ class RegexLabApp(tk.Tk):
     def _build_regex(self):
         tab = self.tab_regex
         self.label(tab, "Validación y búsqueda de patrones", style="Title.TLabel").pack(anchor="w")
-        self.label(tab, "Usa la sintaxis de expresiones regulares de Python. Cada acción importante se guarda automáticamente en el historial.",
+        self.label(tab, "Usa la sintaxis de expresiones regulares.",
                    style="Sub.TLabel").pack(anchor="w", pady=(3, 14))
 
         row = ttk.Frame(tab)
