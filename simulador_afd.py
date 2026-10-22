@@ -105,3 +105,9 @@ class SimuladorAFD:
     def es_estado_final(self):
         """Comprueba si el estado actual es final."""
         return self.estado_actual in self.afd.estados_finales
+
+    def reiniciar(self):
+        """Reinicia el estado actual de la simulación."""
+        self.estado_actual = None
+
+        
