@@ -133,3 +133,7 @@ class SimuladorAFD:
     def contar_estados(self):
         """Devuelve la cantidad de estados del AFD."""
         return len(self.afd.estados)
+
+    def contar_estados_finales(self):
+        """Devuelve la cantidad de estados finales del AFD."""
+        return len(self.afd.estados_finales)
