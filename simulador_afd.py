@@ -121,3 +121,7 @@ class SimuladorAFD:
     def obtener_alfabeto(self):
         """Devuelve una copia del alfabeto del AFD."""
         return self.afd.alfabeto.copy()
+
+    def obtener_transiciones(self, estado):
+        """Devuelve las transiciones que salen de un estado."""
+        return self.afd.transiciones.get(estado, {}).copy()
