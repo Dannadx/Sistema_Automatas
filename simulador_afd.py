@@ -104,4 +104,4 @@ class SimuladorAFD:
     
     def es_estado_final(self):
         """Comprueba si el estado actual es final."""
-        return self.estado_actual in self.automata.estados_finales
+        return self.estado_actual in self.afd.estados_finales
