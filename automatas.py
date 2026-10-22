@@ -134,3 +134,9 @@ class Automata:
         """Comprueba si el autómata tiene símbolos definidos."""
         return bool(self.alfabeto)
 
+    
+    def tiene_estado_inicial(self):
+        """Comprueba si el autómata tiene un estado inicial."""
+        return self.estado_inicial is not None
+
+
