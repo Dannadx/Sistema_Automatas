@@ -125,3 +125,7 @@ class SimuladorAFD:
     def obtener_transiciones(self, estado):
         """Devuelve las transiciones que salen de un estado."""
         return self.afd.transiciones.get(estado, {}).copy()
+
+    def existe_estado(self, estado):
+        """Comprueba si un estado pertenece al AFD."""
+        return estado in self.afd.estados
