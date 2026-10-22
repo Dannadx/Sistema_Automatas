@@ -545,7 +545,7 @@ class InterfazAutomatas:
         self.txt_simbolo.delete(0, tk.END)
         self.txt_destino.delete(0, tk.END)
         self.mostrar_afn()
-
+#Mostrar simbolos
     def mostrar_afn(self):
         if self.afn is None:
             return
