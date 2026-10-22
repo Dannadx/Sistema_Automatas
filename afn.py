@@ -32,6 +32,14 @@ class AFN(Automata):
 
         return set()
 
+    def existe_transicion(self, origen, simbolo, destino):
+        """
+        Comprueba si existe una transición entre dos estados.
+        """
+        destinos = self.obtener_destinos(origen, simbolo)
+        
+        return destino in destinos
+
     def mostrar_transiciones(self):
         """Muestra únicamente las transiciones del AFN."""
 
