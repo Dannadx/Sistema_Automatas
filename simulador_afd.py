@@ -148,3 +148,7 @@ class SimuladorAFD:
     def tiene_estado_inicial(self):
         """Comprueba si el AFD tiene un estado inicial."""
         return self.afd.estado_inicial is not None
+
+    def tiene_estados_finales(self):
+        """Comprueba si el AFD tiene estados finales."""
+        return bool(self.afd.estados_finales)
