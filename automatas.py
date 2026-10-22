@@ -95,6 +95,10 @@ class Automata:
     def existe_estado(self, estado):
         """Comprueba si un estado pertenece al autómata."""
         return estado in self.estados
+
+    def es_estado_inicial(self, estado):
+        """Comprueba si un estado es el estado inicial."""
+        return estado == self.estado_inicial
     
     def obtener_alfabeto(self):
         """Devuelve una copia del alfabeto del autómata."""
