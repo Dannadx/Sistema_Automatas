@@ -91,3 +91,7 @@ class Automata:
     def es_estado_final(self, estado):
         """Comprueba si un estado pertenece al conjunto de estados finales."""
         return estado in self.estados_finales
+
+    def existe_estado(self, estado):
+        """Comprueba si un estado pertenece al autómata."""
+        return estado in self.estados
