@@ -117,3 +117,7 @@ class SimuladorAFD:
     def obtener_estados_finales(self):
         """Devuelve los estados finales del AFD."""
         return self.afd.estados_finales.copy()
+
+    def obtener_alfabeto(self):
+        """Devuelve una copia del alfabeto del AFD."""
+        return self.afd.alfabeto.copy()
