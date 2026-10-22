@@ -152,3 +152,7 @@ class SimuladorAFD:
     def tiene_estados_finales(self):
         """Comprueba si el AFD tiene estados finales."""
         return bool(self.afd.estados_finales)
+
+    def tiene_alfabeto(self):
+        """Comprueba si el AFD tiene símbolos definidos."""
+        return bool(self.afd.alfabeto)
