@@ -112,4 +112,8 @@ class SimuladorAFD:
 
     def simulacion_iniciada(self):
         """Comprueba si hay un estado actual en la simulación."""
-        return self.estado_actual is not None   
+        return self.estado_actual is not None
+
+    def obtener_estados_finales(self):
+        """Devuelve los estados finales del AFD."""
+        return self.afd.estados_finales.copy()
