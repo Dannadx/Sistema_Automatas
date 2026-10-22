@@ -139,4 +139,7 @@ class Automata:
         """Comprueba si el autómata tiene un estado inicial."""
         return self.estado_inicial is not None
 
-
+    
+    def existe_simbolo(self, simbolo):
+        """Comprueba si un símbolo pertenece al alfabeto."""
+        return simbolo in self.alfabeto
