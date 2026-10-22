@@ -144,3 +144,7 @@ class SimuladorAFD:
             len(transiciones)
             for transiciones in self.afd.transiciones.values()
         )
+
+    def tiene_estado_inicial(self):
+        """Comprueba si el AFD tiene un estado inicial."""
+        return self.afd.estado_inicial is not None
