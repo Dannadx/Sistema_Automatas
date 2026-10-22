@@ -5,6 +5,7 @@ class SimuladorAFD:
 
     def __init__(self, afd):
         self.afd = afd
+        self.estado_actual = None
 
     def simular(self, cadena):
         """
@@ -16,6 +17,7 @@ class SimuladorAFD:
             return False
 
         estado_actual = self.afd.estado_inicial
+        self.estado_actual = estado_actual 
 
         print("\n========== SIMULACIÓN AFD ==========")
 
@@ -68,6 +70,7 @@ class SimuladorAFD:
 
             # Como es un AFD, solamente existe un destino
             estado_actual = next(iter(destinos))
+            self.estado_actual = estado_actual
 
             print("Estado actual:")
             print(estado_actual)
@@ -94,3 +97,7 @@ class SimuladorAFD:
             print("====================================\n")
 
             return False
+
+    def obtener_estado_actual(self):
+        """Devuelve el estado actual de la simulación."""
+        return self.estado_actual
