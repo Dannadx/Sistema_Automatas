@@ -103,6 +103,10 @@ class Automata:
     def obtener_estado_inicial(self):
         """Devuelve el estado inicial del autómata."""
         return self.estado_inicial
+
+    def existe_transicion(self, origen, simbolo):
+        """Comprueba si existe una transición desde un estado con un símbolo."""
+        return simbolo in self.transiciones.get(origen, {})
     
     def obtener_alfabeto(self):
         """Devuelve una copia del alfabeto del autómata."""
