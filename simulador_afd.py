@@ -101,3 +101,7 @@ class SimuladorAFD:
     def obtener_estado_actual(self):
         """Devuelve el estado actual de la simulación."""
         return self.estado_actual
+    
+    def es_estado_final(self):
+        """Comprueba si el estado actual es final."""
+        return self.estado_actual in self.automata.estados_finales
