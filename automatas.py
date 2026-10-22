@@ -99,6 +99,10 @@ class Automata:
     def es_estado_inicial(self, estado):
         """Comprueba si un estado es el estado inicial."""
         return estado == self.estado_inicial
+
+    def obtener_estado_inicial(self):
+        """Devuelve el estado inicial del autómata."""
+        return self.estado_inicial
     
     def obtener_alfabeto(self):
         """Devuelve una copia del alfabeto del autómata."""
