@@ -110,4 +110,6 @@ class SimuladorAFD:
         """Reinicia el estado actual de la simulación."""
         self.estado_actual = None
 
-        
+    def simulacion_iniciada(self):
+        """Comprueba si hay un estado actual en la simulación."""
+        return self.estado_actual is not None   
