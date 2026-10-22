@@ -107,3 +107,7 @@ class Automata:
     def obtener_estados_finales(self):
         """Devuelve una copia de los estados finales del autómata."""
         return self.estados_finales.copy()
+
+    def obtener_estados(self):
+        """Devuelve una copia de los estados del autómata."""
+        return self.estados.copy()
