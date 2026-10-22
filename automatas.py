@@ -103,3 +103,7 @@ class Automata:
     def obtener_transiciones(self, estado):
         """Devuelve las transiciones que salen de un estado."""
         return self.transiciones.get(estado, {}).copy()
+
+    def obtener_estados_finales(self):
+        """Devuelve una copia de los estados finales del autómata."""
+        return self.estados_finales.copy()
