@@ -87,3 +87,7 @@ class Automata:
                     print(f"  {origen} --{simbolo}--> {destino}")
 
         print("===============================\n")
+
+    def es_estado_final(self, estado):
+        """Comprueba si un estado pertenece al conjunto de estados finales."""
+        return estado in self.estados_finales
