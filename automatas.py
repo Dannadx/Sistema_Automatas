@@ -123,3 +123,9 @@ class Automata:
     def obtener_estados(self):
         """Devuelve una copia de los estados del autómata."""
         return self.estados.copy()
+
+    
+    def tiene_estados(self):
+        """Comprueba si el autómata tiene estados definidos."""
+        return bool(self.estados)
+
