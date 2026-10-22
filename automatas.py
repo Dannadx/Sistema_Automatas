@@ -95,3 +95,7 @@ class Automata:
     def existe_estado(self, estado):
         """Comprueba si un estado pertenece al autómata."""
         return estado in self.estados
+    
+    def obtener_alfabeto(self):
+        """Devuelve una copia del alfabeto del autómata."""
+        return self.alfabeto.copy()
