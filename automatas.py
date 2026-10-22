@@ -143,3 +143,9 @@ class Automata:
     def existe_simbolo(self, simbolo):
         """Comprueba si un símbolo pertenece al alfabeto."""
         return simbolo in self.alfabeto
+
+    
+    def contar_simbolos(self):
+        """Devuelve la cantidad de símbolos del alfabeto."""
+        return len(self.alfabeto)
+
