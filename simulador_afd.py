@@ -129,3 +129,7 @@ class SimuladorAFD:
     def existe_estado(self, estado):
         """Comprueba si un estado pertenece al AFD."""
         return estado in self.afd.estados
+
+    def contar_estados(self):
+        """Devuelve la cantidad de estados del AFD."""
+        return len(self.afd.estados)
