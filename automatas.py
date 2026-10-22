@@ -138,7 +138,6 @@ class Automata:
     def tiene_estado_inicial(self):
         """Comprueba si el autómata tiene un estado inicial."""
         return self.estado_inicial is not None
-
     
     def existe_simbolo(self, simbolo):
         """Comprueba si un símbolo pertenece al alfabeto."""
@@ -148,4 +147,9 @@ class Automata:
     def contar_simbolos(self):
         """Devuelve la cantidad de símbolos del alfabeto."""
         return len(self.alfabeto)
+    
+    def contar_estados_no_finales(self):
+        """Devuelve la cantidad de estados que no son finales."""
+        return len(self.estados - self.estados_finales)
+
 
