@@ -99,3 +99,7 @@ class Automata:
     def obtener_alfabeto(self):
         """Devuelve una copia del alfabeto del autómata."""
         return self.alfabeto.copy()
+
+    def obtener_transiciones(self, estado):
+        """Devuelve las transiciones que salen de un estado."""
+        return self.transiciones.get(estado, {}).copy()
