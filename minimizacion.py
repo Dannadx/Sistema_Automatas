@@ -1,5 +1,5 @@
 from automatas import Automata
-
+#Algoritmo para la minimizacion de automatas
 
 class MinimizadorAFD:
 
