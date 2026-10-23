@@ -1,7 +1,7 @@
 from automatas import Automata
 
 
-
+#Metodos de construccion y validacion para AFN
 
 class AFN(Automata):
 
