@@ -7,6 +7,7 @@ from simulador import SimuladorAFN
 from simulador_afd import SimuladorAFD
 import math
 
+#Definicon de estructuras y reglas para automatas finitos
 
 class InterfazAutomatas:
 
