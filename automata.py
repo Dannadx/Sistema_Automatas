@@ -6,6 +6,7 @@ No soporta clases como [a-z], cuantificadores {m,n}, lookarounds ni clases \\d/\
 #CODIGO INICIAL 
 EPSILON = "ε"
 CONCAT = "·"
+#prueba definitiva
 
 def tokenize(expression):
     if not expression:
