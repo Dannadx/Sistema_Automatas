@@ -6,8 +6,10 @@ from minimizacion import MinimizadorAFD
 from simulador import SimuladorAFN
 from simulador_afd import SimuladorAFD
 import math
+import subprocess
+import sys
+from pathlib import Path
 
-#Definicon de estructuras y reglas para automatas finitos
 
 class InterfazAutomatas:
 
@@ -274,6 +276,19 @@ class InterfazAutomatas:
 
         tk.Button(
             panel_inferior,
+            text="Abrir REGEX LAB",
+            command=self.abrir_regex_lab,
+            bg=self.COLOR_BTN_ACTION,
+            fg="white",
+            font=self.FONT_BOLD,
+            bd=0,
+            cursor="hand2",
+            padx=25,
+            pady=10
+        ).pack(side="left", padx=(15, 0))
+
+        tk.Button(
+            panel_inferior,
             text="Cerrar Aplicación",
             command=self.ventana.destroy,
             bg=self.COLOR_BTN_DANGER,
@@ -517,9 +532,13 @@ class InterfazAutomatas:
         self.mostrar_afn()
         messagebox.showinfo("Éxito", "Estructura del AFN creada correctamente.")
 
+
     def agregar_transicion(self):
         if self.afn is None:
-            messagebox.showwarning("Advertencia", "Primero debe crear la estructura del AFN.")
+            messagebox.showwarning(
+                "Advertencia",
+                "Primero debe crear la estructura del AFN."
+            )
             return
 
         origen = self.txt_origen.get().strip()
@@ -527,26 +546,52 @@ class InterfazAutomatas:
         destino = self.txt_destino.get().strip()
 
         if not origen or not simbolo or not destino:
-            messagebox.showwarning("Advertencia", "Complete todos los campos de la transición.")
+            messagebox.showwarning(
+                    "Advertencia",
+                "Complete todos los campos de la transición."
+            )
             return
 
         if origen not in self.afn.estados or destino not in self.afn.estados:
-            messagebox.showwarning("Advertencia", "El estado de origen o destino no existe.")
+            messagebox.showwarning(
+                "Advertencia",
+                "El estado de origen o destino no existe."
+            )
             return
 
         if simbolo not in self.afn.alfabeto and simbolo != "ε":
-            messagebox.showwarning("Advertencia", f"El símbolo '{simbolo}' no pertenece al alfabeto asignado.")
+            messagebox.showwarning(
+                "Advertencia",
+                f"El símbolo '{simbolo}' no pertenece al alfabeto asignado."
+            )
             return
 
+        # Verificar si la transición ya existe
+        transiciones_existentes = self.afn.transiciones.get(origen, {})
+
+        destinos_existentes = transiciones_existentes.get(simbolo, set())
+
+        if destino in destinos_existentes:
+            messagebox.showwarning(
+                "Transición duplicada",
+                f"La transición {origen} --{simbolo}--> {destino} "
+                "ya existe en el AFN."
+            )
+            return
+
+        # Agregar la transición si no existe
         self.afn.agregar_transicion(origen, simbolo, destino)
+
         self.afd = None
         self.afd_minimo = None
 
         self.txt_origen.delete(0, tk.END)
         self.txt_simbolo.delete(0, tk.END)
         self.txt_destino.delete(0, tk.END)
+
         self.mostrar_afn()
-#Mostrar simbolos
+
+
     def mostrar_afn(self):
         if self.afn is None:
             return
@@ -690,6 +735,22 @@ class InterfazAutomatas:
                 self.afd_minimo.agregar_transicion("q_trap", simbolo, "q_trap")
 
         self.dibujar_automata(self.afd_minimo)
+
+
+    def abrir_regex_lab(self):
+        """Abre REGEX LAB desde la interfaz original de la primera entrega."""
+        ruta = Path(__file__).resolve().parent / "regex_lab.py"
+        try:
+            subprocess.Popen([sys.executable, str(ruta)], cwd=str(ruta.parent))
+            self.area_resultado.insert(
+                tk.END,
+                "\nREGEX LAB abierto correctamente.\n"
+            )
+        except OSError as error:
+            messagebox.showerror(
+                "No se pudo abrir REGEX LAB",
+                f"Detalle: {error}"
+            )
 
     def limpiar(self):
         self.txt_estados.delete(0, tk.END)

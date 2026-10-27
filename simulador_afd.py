@@ -5,7 +5,11 @@ class SimuladorAFD:
 
     def __init__(self, afd):
         self.afd = afd
+<<<<<<< HEAD
         self.estado_actual = None
+=======
+
+>>>>>>> 0d75773174ba9944bdb0e0a0628d4ee225272967
     def simular(self, cadena):
         """
         Simula una cadena sobre el AFD.
@@ -14,7 +18,11 @@ class SimuladorAFD:
             print("El AFD no tiene estado inicial.")
             return False
         estado_actual = self.afd.estado_inicial
+<<<<<<< HEAD
         self.estado_actual = estado_actual 
+=======
+
+>>>>>>> 0d75773174ba9944bdb0e0a0628d4ee225272967
         print("\n========== SIMULACIÓN AFD ==========")
         print("Cadena:", cadena)
         print("\nEstado inicial:")
@@ -59,7 +67,6 @@ class SimuladorAFD:
 
             # Como es un AFD, solamente existe un destino
             estado_actual = next(iter(destinos))
-            self.estado_actual = estado_actual
 
             print("Estado actual:")
             print(estado_actual)
@@ -86,62 +93,3 @@ class SimuladorAFD:
             print("====================================\n")
 
             return False
-
-    def obtener_estado_actual(self):
-        """Devuelve el estado actual de la simulación."""
-        return self.estado_actual
-    
-    def es_estado_final(self):
-        """Comprueba si el estado actual es final."""
-        return self.estado_actual in self.afd.estados_finales
-
-    def reiniciar(self):
-        """Reinicia el estado actual de la simulación."""
-        self.estado_actual = None
-
-    def simulacion_iniciada(self):
-        """Comprueba si hay un estado actual en la simulación."""
-        return self.estado_actual is not None
-
-    def obtener_estados_finales(self):
-        """Devuelve los estados finales del AFD."""
-        return self.afd.estados_finales.copy()
-
-    def obtener_alfabeto(self):
-        """Devuelve una copia del alfabeto del AFD."""
-        return self.afd.alfabeto.copy()
-
-    def obtener_transiciones(self, estado):
-        """Devuelve las transiciones que salen de un estado."""
-        return self.afd.transiciones.get(estado, {}).copy()
-
-    def existe_estado(self, estado):
-        """Comprueba si un estado pertenece al AFD."""
-        return estado in self.afd.estados
-
-    def contar_estados(self):
-        """Devuelve la cantidad de estados del AFD."""
-        return len(self.afd.estados)
-
-    def contar_estados_finales(self):
-        """Devuelve la cantidad de estados finales del AFD."""
-        return len(self.afd.estados_finales)
-
-    def contar_transiciones(self):
-        """Devuelve la cantidad de transiciones del AFD."""
-        return sum(
-            len(transiciones)
-            for transiciones in self.afd.transiciones.values()
-        )
-
-    def tiene_estado_inicial(self):
-        """Comprueba si el AFD tiene un estado inicial."""
-        return self.afd.estado_inicial is not None
-
-    def tiene_estados_finales(self):
-        """Comprueba si el AFD tiene estados finales."""
-        return bool(self.afd.estados_finales)
-
-    def tiene_alfabeto(self):
-        """Comprueba si el AFD tiene símbolos definidos."""
-        return bool(self.afd.alfabeto)

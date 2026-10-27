@@ -1,5 +1,5 @@
 from automatas import Automata
-#Algoritmo para la minimizacion de automatas
+
 
 class MinimizadorAFD:
 
@@ -29,7 +29,6 @@ class MinimizadorAFD:
 
     def minimizar(self):
 
-        #copiar los estados NUEVO
         # Copiar los estados
         estados = list(self.afd.estados)
 
