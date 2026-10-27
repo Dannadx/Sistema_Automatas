@@ -1,73 +1,87 @@
 from automatas import Automata
 
-#prueba coversion
+
 class ConvertidorAFN_AFD:
+    """Convierte un AFN en AFD mediante construcción por subconjuntos.
+    Incluye clausura-ε para admitir transiciones epsilon correctamente.
+    """
 
     def __init__(self, afn):
         self.afn = afn
 
+    def clausura_epsilon(self, estados):
+        resultado = set(estados)
+        pendientes = list(estados)
+
+        while pendientes:
+            actual = pendientes.pop()
+            destinos = self.afn.obtener_destinos(actual, "ε")
+            for destino in destinos:
+                if destino not in resultado:
+                    resultado.add(destino)
+                    pendientes.append(destino)
+
+        return resultado
+
     def convertir(self):
         afd = Automata()
 
-        # Copiar el alfabeto
         for simbolo in self.afn.alfabeto:
             afd.agregar_simbolo(simbolo)
 
-        # Estado inicial del AFN
-        estado_inicial_set = frozenset([self.afn.estado_inicial])
+        if self.afn.estado_inicial is None:
+            raise ValueError("El AFN no tiene un estado inicial.")
 
-        # Mapeo de conjuntos (frozenset) a nombres amigables ("Q0", "Q1", ...)
-        mapa_nombres = {}
-        contador = 0
+        estado_inicial_set = frozenset(
+            self.clausura_epsilon({self.afn.estado_inicial})
+        )
 
-        nombre_inicial = f"Q{contador}"
-        mapa_nombres[estado_inicial_set] = nombre_inicial
-        contador += 1
-
-        afd.agregar_estado(nombre_inicial)
-        afd.establecer_inicial(nombre_inicial)
+        mapa_nombres = {estado_inicial_set: "Q0"}
+        afd.agregar_estado("Q0")
+        afd.establecer_inicial("Q0")
 
         pendientes = [estado_inicial_set]
         procesados = set()
+        contador = 1
 
         while pendientes:
-            conjunto_actual = pendientes.pop()
+            conjunto_actual = pendientes.pop(0)
 
             if conjunto_actual in procesados:
                 continue
-
             procesados.add(conjunto_actual)
+
             nombre_origen = mapa_nombres[conjunto_actual]
 
-            # Verificar si es estado final
-            for estado in conjunto_actual:
-                if estado in self.afn.estados_finales:
-                    afd.agregar_final(nombre_origen)
-                    break
+            if any(
+                estado in self.afn.estados_finales
+                for estado in conjunto_actual
+            ):
+                afd.agregar_final(nombre_origen)
 
-            # Procesar transiciones para cada símbolo
-            for simbolo in self.afn.alfabeto:
-                destinos_set = set()
+            for simbolo in sorted(self.afn.alfabeto):
+                destinos = set()
 
                 for estado in conjunto_actual:
-                    destinos = self.afn.obtener_destinos(estado, simbolo)
-                    destinos_set.update(destinos)
+                    destinos.update(
+                        self.afn.obtener_destinos(estado, simbolo)
+                    )
 
-                nuevo_conjunto = frozenset(destinos_set)
+                nuevo_conjunto = frozenset(
+                    self.clausura_epsilon(destinos)
+                )
 
-                # Si el conjunto no está en el mapa, le asignamos un nuevo nombre Q_n
                 if nuevo_conjunto not in mapa_nombres:
                     nombre_nuevo = f"Q{contador}"
-                    mapa_nombres[nuevo_conjunto] = nombre_nuevo
                     contador += 1
+                    mapa_nombres[nuevo_conjunto] = nombre_nuevo
                     afd.agregar_estado(nombre_nuevo)
-
-                nombre_destino = mapa_nombres[nuevo_conjunto]
-
-                # Agregar transición en el AFD
-                afd.agregar_transicion(nombre_origen, simbolo, nombre_destino)
-
-                if nuevo_conjunto not in procesados:
                     pendientes.append(nuevo_conjunto)
+
+                afd.agregar_transicion(
+                    nombre_origen,
+                    simbolo,
+                    mapa_nombres[nuevo_conjunto]
+                )
 
         return afd

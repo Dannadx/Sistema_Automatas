@@ -1,0 +1,6 @@
+"""Punto de entrada de la segunda entrega: REGEX LAB."""
+from interfaz import RegexLabApp
+
+if __name__ == "__main__":
+    app = RegexLabApp()
+    app.mainloop()

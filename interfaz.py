@@ -6,7 +6,10 @@ import re
 from database import initialize_database, query_logs, get_stats
 from log_manager import log_event, export_logs
 from regex_engine import validate_string, find_matches, test_many
-from automata import regex_to_nfa, nfa_to_dfa, minimize_dfa, validate_with_dfa, transition_lines
+from regex_automata import regex_to_core_afn, core_to_display_dfa, transition_lines
+from conversion import ConvertidorAFN_AFD
+from minimizacion import MinimizadorAFD
+from simulador_afd import SimuladorAFD
 
 BG = "#0F172A"
 PANEL = "#1E293B"
@@ -21,11 +24,12 @@ class RegexLabApp(tk.Tk):
     def __init__(self):
         super().__init__()
         initialize_database()
-        self.title("REGEX LAB | Analizador de expresiones y logs")
+        self.title("Sistema de autómatas y expresiones regulares")
         self.geometry("1180x780")
         self.minsize(980, 650)
         self.configure(bg=BG)
         self.current_dfa = None
+        self.current_core_dfa = None
         self.log_event("INFO", "SISTEMA", "Aplicación iniciada")
         self._style()
         self._build()
@@ -55,11 +59,10 @@ class RegexLabApp(tk.Tk):
 
     def _build(self):
         header = tk.Frame(self, bg=BG)
-        header.pack(fill="x", padx=22, pady=(18, 8))
-        tk.Label(header, text="REGEX LAB", bg=BG, fg=ACCENT,
-                 font=("Segoe UI", 23, "bold")).pack(side="left")
-        tk.Label(header, text="  |  Motor de patrones · Autómatas · Auditoría de eventos",
-                 bg=BG, fg=MUTED, font=("Segoe UI", 10)).pack(side="left", pady=(8, 0))
+        header.pack(fill="x", padx=22, pady=(14, 6))
+        tk.Label(header, text="Sistema de autómatas y expresiones regulares", bg=BG, fg=TEXT,
+                 font=("Segoe UI", 17, "bold")).pack(side="left")
+        ttk.Separator(self, orient="horizontal").pack(fill="x", padx=22, pady=(0, 8))
 
         self.stats_frame = tk.Frame(self, bg=BG)
         self.stats_frame.pack(fill="x", padx=22, pady=8)
@@ -92,15 +95,16 @@ class RegexLabApp(tk.Tk):
     def _build_regex(self):
         tab = self.tab_regex
         self.label(tab, "Validación y búsqueda de patrones", style="Title.TLabel").pack(anchor="w")
-        self.label(tab, "Usa la sintaxis de expresiones regulares.",
+        self.label(tab, "Usa la sintaxis de expresiones regulares. Cada acción importante se guarda automáticamente en el historial.",
                    style="Sub.TLabel").pack(anchor="w", pady=(3, 14))
 
         row = ttk.Frame(tab)
         row.pack(fill="x")
-        self.regex_entry = ttk.Entry(row)
+        self.regex_entry = ttk.Entry(row, width=58)
         self.regex_entry.insert(0, r"^[A-Z]{3}\d{4}$")
-        self.regex_entry.pack(side="left", fill="x", expand=True, ipady=5)
-        ttk.Button(row, text="Probar Regex", command=self.regex_info).pack(side="left", padx=(8, 0))
+        self.regex_entry.pack(side="left", ipady=5)
+        ttk.Button(row, text="Comprobar expresión", command=self.regex_info).pack(side="left", padx=(8, 0))
+        ttk.Separator(tab, orient="horizontal").pack(fill="x", pady=(12, 2))
 
         columns = ttk.Frame(tab)
         columns.pack(fill="both", expand=True, pady=(14, 0))
@@ -204,20 +208,24 @@ class RegexLabApp(tk.Tk):
 
     def _build_automata(self):
         tab = self.tab_automata
-        self.label(tab, "Conversión de Regex a autómatas", style="Title.TLabel").pack(anchor="w")
-        self.label(tab, "Genera un AFN por Thompson, conviértelo a AFD y aplica minimización. El dibujo presenta una vista esquemática de los estados y transiciones.",
-                   style="Sub.TLabel").pack(anchor="w", pady=(3, 12))
+        self.label(tab, "Conversión de expresión regular a autómatas", style="Title.TLabel").pack(anchor="w")
+        self.label(tab, "Convierte la expresión en AFN, AFD y AFD mínimo. Puedes revisar las transiciones y probar una cadena.",
+                   style="Sub.TLabel").pack(anchor="w", pady=(3, 10))
+        ttk.Separator(tab, orient="horizontal").pack(fill="x", pady=(0, 10))
         row = ttk.Frame(tab)
-        row.pack(fill="x")
-        self.automata_entry = ttk.Entry(row)
+        row.pack(fill="x", anchor="w")
+        self.automata_entry = ttk.Entry(row, width=42)
         self.automata_entry.insert(0, "(a|b)*abb")
-        self.automata_entry.pack(side="left", fill="x", expand=True, ipady=5)
+        self.automata_entry.pack(side="left", ipady=5)
         ttk.Button(row, text="Generar AFD mínimo", command=self.generate_automaton).pack(side="left", padx=(8, 0))
         ttk.Button(row, text="Validar con AFD", command=self.validate_automaton).pack(side="left", padx=(8, 0))
 
-        self.automata_test = ttk.Entry(tab)
+        ttk.Separator(tab, orient="horizontal").pack(fill="x", pady=(12, 8))
+        self.label(tab, "Cadena que deseas probar").pack(anchor="w", pady=(0, 4))
+        self.automata_test = ttk.Entry(tab, width=42)
         self.automata_test.insert(0, "aabb")
-        self.automata_test.pack(fill="x", pady=(10, 8), ipady=4)
+        self.automata_test.pack(anchor="w", pady=(0, 8), ipady=4)
+        ttk.Separator(tab, orient="horizontal").pack(fill="x", pady=(0, 10))
 
         body = ttk.Frame(tab)
         body.pack(fill="both", expand=True)
@@ -232,24 +240,41 @@ class RegexLabApp(tk.Tk):
     def generate_automaton(self):
         expr = self.automata_entry.get()
         try:
-            nfa = regex_to_nfa(expr)
-            dfa = nfa_to_dfa(nfa)
-            minimized = minimize_dfa(dfa)
+            nfa_original, afn_compartido = regex_to_core_afn(expr)
+            afd_compartido = ConvertidorAFN_AFD(afn_compartido).convertir()
+            afd_minimo_compartido = MinimizadorAFD(afd_compartido).minimizar()
+
+            # Mantener el objeto real del AFD para validar con el simulador de la Entrega 1.
+            self.current_core_dfa = afd_minimo_compartido
+            minimized = core_to_display_dfa(afd_minimo_compartido)
             self.current_dfa = minimized
+
+            lineas_afn = [
+                f"r{origen} -- {simbolo} --> r{destino}"
+                for (origen, simbolo), destinos in sorted(
+                    nfa_original.transitions.items(),
+                    key=lambda item: (item[0][0], item[0][1])
+                )
+                for destino in sorted(destinos)
+            ]
             lines = [
                 f"Regex: {expr}",
-                f"Estados AFN: {len(nfa.states)}",
-                f"Estados AFD: {len(dfa['states'])}",
-                f"Estados AFD mínimo: {len(minimized['states'])}",
-                f"Alfabeto: {minimized['alphabet']}",
-                f"Estado inicial: q{minimized['start']}",
-                f"Estados finales: {sorted(minimized['accepting'])}",
-                "", "TRANSICIONES:"
-            ] + transition_lines(minimized)
+                f"Estados AFN: {len(nfa_original.states)}",
+                f"Estados AFD: {len(afd_compartido.estados)}",
+                f"Estados AFD mínimo: {len(afd_minimo_compartido.estados)}",
+                f"Alfabeto: {sorted(afd_minimo_compartido.alfabeto)}",
+                f"Estado inicial: {afd_minimo_compartido.estado_inicial}",
+                f"Estados finales: {sorted(afd_minimo_compartido.estados_finales, key=str)}",
+                "", "TRANSICIONES DEL AFN (Thompson):"
+            ] + lineas_afn + ["", "TRANSICIONES DEL AFD MÍNIMO:"] + transition_lines(minimized)
             self.set_output(self.automata_output, "\n".join(lines))
             self.draw_automaton(minimized)
-            self.log_event("INFO", "AUTÓMATA", "AFN, AFD y AFD mínimo generados",
-                           f"Regex={expr} | AFN={len(nfa.states)} | AFD={len(dfa['states'])} | Mínimo={len(minimized['states'])}")
+            self.log_event(
+                "INFO", "AUTÓMATA", "AFN, AFD y AFD mínimo generados",
+                f"Regex={expr} | AFN={len(nfa_original.states)} | "
+                f"AFD={len(afd_compartido.estados)} | "
+                f"Mínimo={len(afd_minimo_compartido.estados)}"
+            )
         except Exception as exc:
             self.log_event("ERROR", "AUTÓMATA", "No se pudo generar el autómata", f"{expr} | {exc}")
             messagebox.showerror("Error al generar autómata", str(exc))
@@ -261,8 +286,17 @@ class RegexLabApp(tk.Tk):
             messagebox.showwarning("Autómata requerido", "Primero genera el AFD mínimo.")
             return
         value = self.automata_test.get()
-        ok = validate_with_dfa(self.current_dfa, value)
-        self.set_output(self.automata_output, f"Cadena: {value}\nResultado: {'ACEPTADA' if ok else 'RECHAZADA'}\n\n" + "\n".join(transition_lines(self.current_dfa)))
+        # La validación se realiza con el simulador de AFD que ya usa la Entrega 1.
+        from contextlib import redirect_stdout
+        import io
+        salida_simulador = io.StringIO()
+        with redirect_stdout(salida_simulador):
+            ok = SimuladorAFD(self.current_core_dfa).simular(value)
+        self.set_output(
+            self.automata_output,
+            f"Cadena: {value}\nResultado: {'ACEPTADA' if ok else 'RECHAZADA'}"
+            + "\n\n" + "\n".join(transition_lines(self.current_dfa))
+        )
         self.log_event("INFO" if ok else "WARNING", "AUTÓMATA",
                        f"Cadena {'aceptada' if ok else 'rechazada'} por el AFD",
                        f"Cadena={value}")
