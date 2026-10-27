@@ -8,6 +8,7 @@ EPSILON = "ε"
 CONCAT = "·"
 
 def tokenize(expression):
+    """Convierte la expresión regular en una lista de tokens básicos."""
     if not expression:
         raise ValueError("Escribe una Regex para generar el autómata.")
     tokens = []
@@ -31,6 +32,7 @@ def tokenize(expression):
     return tokens
 
 def to_postfix(expression):
+    """Convierte la expresión regular a notación Postfix (RPN)."""
     tokens = tokenize(expression)
     expanded = []
     atom_end = {"LIT", ")", "*", "+", "?"}
@@ -87,6 +89,7 @@ class NFA:
             self.alphabet.add(symbol)
 
 def regex_to_nfa(expression):
+    """Construye un AFN mediante el algoritmo de Thompson."""
     postfix = to_postfix(expression)
     nfa = NFA()
     stack = []
@@ -137,7 +140,6 @@ def regex_to_nfa(expression):
         raise ValueError("La expresión no pudo interpretarse. Revisa operadores y paréntesis.")
     nfa.start, nfa.accept = stack[0]
     return nfa
-
 
 
 def regex_to_core_afn(expression):
