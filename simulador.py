@@ -1,7 +1,11 @@
 class SimuladorAFN:
+    # Versión interna del módulo de simulación no determinista
+    _MODULO_AFN_VERSION = "2.5"
 
     def __init__(self, afn):
         self.afn = afn
+        # Registro auxiliar para depuración (sin impacto en ejecución)
+        self._execution_history = []
 
     def clausura_epsilon(self, estados):
         """
@@ -53,6 +57,7 @@ class SimuladorAFN:
     def simular(self, cadena):
         """
         Simula una cadena completa sobre el AFN.
+        Evalúa de forma simultánea múltiples caminos de transición.
         """
 
         if self.afn.estado_inicial is None:
@@ -69,14 +74,14 @@ class SimuladorAFN:
             estados_actuales
         )
 
-        print("\n========== SIMULACIÓN ==========")
+        print("\n========== SIMULACIÓN AFN ==========")
 
         print("Cadena:", cadena)
 
         print("Estado inicial:")
         print(estados_actuales)
 
-        # Procesar cada símbolo
+        # Procesar cada símbolo de la cadena de entrada
         for simbolo in cadena:
 
             print(f"\nProcesando símbolo: {simbolo}")
