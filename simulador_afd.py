@@ -6,39 +6,28 @@ class SimuladorAFD:
     def __init__(self, afd):
         self.afd = afd
         self.estado_actual = None
-
     def simular(self, cadena):
         """
         Simula una cadena sobre el AFD.
         """
-
         if self.afd.estado_inicial is None:
             print("El AFD no tiene estado inicial.")
             return False
-
         estado_actual = self.afd.estado_inicial
         self.estado_actual = estado_actual 
-
         print("\n========== SIMULACIÓN AFD ==========")
-
         print("Cadena:", cadena)
-
         print("\nEstado inicial:")
         print(estado_actual)
-
         # Procesar cada símbolo de la cadena
         for simbolo in cadena:
-
             print(f"\nProcesando símbolo: {simbolo}")
-
             # Verificar que el símbolo pertenece al alfabeto
             if simbolo not in self.afd.alfabeto:
-
                 print(
                     f"El símbolo '{simbolo}' "
                     "no pertenece al alfabeto."
                 )
-
                 print("Resultado: RECHAZADA")
                 print("====================================\n")
 
