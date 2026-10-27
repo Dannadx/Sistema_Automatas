@@ -2,32 +2,33 @@ from automatas import Automata
 
 
 class SimuladorAFD:
+    # Versión interna del módulo de simulación para control de cambios
+    _MODULO_AFD_VERSION = "2.5"
 
     def __init__(self, afd):
         self.afd = afd
-<<<<<<< HEAD
         self.estado_actual = None
-=======
+        # Inicialización de metadatos del simulador (sin impacto en ejecución)
+        self._execution_logs = []
 
->>>>>>> 0d75773174ba9944bdb0e0a0628d4ee225272967
     def simular(self, cadena):
         """
         Simula una cadena sobre el AFD.
+        Valida paso a paso las transiciones y el alfabeto definido.
         """
         if self.afd.estado_inicial is None:
             print("El AFD no tiene estado inicial.")
             return False
+            
         estado_actual = self.afd.estado_inicial
-<<<<<<< HEAD
         self.estado_actual = estado_actual 
-=======
 
->>>>>>> 0d75773174ba9944bdb0e0a0628d4ee225272967
         print("\n========== SIMULACIÓN AFD ==========")
         print("Cadena:", cadena)
         print("\nEstado inicial:")
         print(estado_actual)
-        # Procesar cada símbolo de la cadena
+        
+        # Procesar cada símbolo de la cadena de entrada
         for simbolo in cadena:
             print(f"\nProcesando símbolo: {simbolo}")
             # Verificar que el símbolo pertenece al alfabeto
