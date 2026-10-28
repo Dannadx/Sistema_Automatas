@@ -30,6 +30,7 @@ class RegexLabApp(tk.Tk):
         self.configure(bg=BG)
         self.current_dfa = None
         self.current_core_dfa = None
+        self.current_regex = None
         self.log_event("INFO", "SISTEMA", "Aplicación iniciada")
         self._style()
         self._build()
@@ -237,71 +238,247 @@ class RegexLabApp(tk.Tk):
         self.automata_output.insert("1.0", "Genera un autómata para ver sus transiciones.")
         self.automata_output.configure(state="disabled")
 
+        
     def generate_automaton(self):
-        expr = self.automata_entry.get()
+        expr = self.automata_entry.get().strip()
+
+        # Limpiar el autómata anterior antes de generar uno nuevo.
+        self.current_dfa = None
+        self.current_core_dfa = None
+        self.current_regex = None
+        self.canvas.delete("all")
+
+        self.set_output(
+            self.automata_output,
+            "Generando autómata..."
+        )
+
         try:
             nfa_original, afn_compartido = regex_to_core_afn(expr)
-            afd_compartido = ConvertidorAFN_AFD(afn_compartido).convertir()
-            afd_minimo_compartido = MinimizadorAFD(afd_compartido).minimizar()
 
-            # Mantener el objeto real del AFD para validar con el simulador de la Entrega 1.
+            afd_compartido = ConvertidorAFN_AFD(
+                afn_compartido
+            ).convertir()
+
+            afd_minimo_compartido = MinimizadorAFD(
+                afd_compartido
+            ).minimizar()
+
+            # Guardar el AFD y la expresión con la que se generó.
+            minimized = core_to_display_dfa(
+                afd_minimo_compartido
+            )
+
             self.current_core_dfa = afd_minimo_compartido
-            minimized = core_to_display_dfa(afd_minimo_compartido)
             self.current_dfa = minimized
+            self.current_regex = expr
 
             lineas_afn = [
                 f"r{origen} -- {simbolo} --> r{destino}"
                 for (origen, simbolo), destinos in sorted(
                     nfa_original.transitions.items(),
-                    key=lambda item: (item[0][0], item[0][1])
+                    key=lambda item: (
+                        item[0][0],
+                        item[0][1]
+                    )
                 )
                 for destino in sorted(destinos)
             ]
+
             lines = [
                 f"Regex: {expr}",
                 f"Estados AFN: {len(nfa_original.states)}",
                 f"Estados AFD: {len(afd_compartido.estados)}",
-                f"Estados AFD mínimo: {len(afd_minimo_compartido.estados)}",
-                f"Alfabeto: {sorted(afd_minimo_compartido.alfabeto)}",
-                f"Estado inicial: {afd_minimo_compartido.estado_inicial}",
-                f"Estados finales: {sorted(afd_minimo_compartido.estados_finales, key=str)}",
-                "", "TRANSICIONES DEL AFN (Thompson):"
-            ] + lineas_afn + ["", "TRANSICIONES DEL AFD MÍNIMO:"] + transition_lines(minimized)
-            self.set_output(self.automata_output, "\n".join(lines))
-            self.draw_automaton(minimized)
-            self.log_event(
-                "INFO", "AUTÓMATA", "AFN, AFD y AFD mínimo generados",
-                f"Regex={expr} | AFN={len(nfa_original.states)} | "
-                f"AFD={len(afd_compartido.estados)} | "
-                f"Mínimo={len(afd_minimo_compartido.estados)}"
+                (
+                    "Estados AFD mínimo: "
+                    f"{len(afd_minimo_compartido.estados)}"
+                ),
+                (
+                    "Alfabeto: "
+                    f"{sorted(afd_minimo_compartido.alfabeto)}"
+                ),
+                (
+                    "Estado inicial: "
+                    f"{afd_minimo_compartido.estado_inicial}"
+                ),
+                (
+                    "Estados finales: "
+                    f"{sorted(afd_minimo_compartido.estados_finales, key=str)}"
+                ),
+                "",
+                "TRANSICIONES DEL AFN (Thompson):"
+            ] + lineas_afn + [
+                "",
+                "TRANSICIONES DEL AFD MÍNIMO:"
+            ] + transition_lines(minimized)
+
+            self.set_output(
+                self.automata_output,
+                "\n".join(lines)
             )
+
+            self.draw_automaton(minimized)
+
+            self.log_event(
+                "INFO",
+                "AUTÓMATA",
+                "AFN, AFD y AFD mínimo generados",
+                (
+                    f"Regex={expr} | "
+                    f"AFN={len(nfa_original.states)} | "
+                    f"AFD={len(afd_compartido.estados)} | "
+                    f"Mínimo={len(afd_minimo_compartido.estados)}"
+                )
+            )
+
         except Exception as exc:
-            self.log_event("ERROR", "AUTÓMATA", "No se pudo generar el autómata", f"{expr} | {exc}")
-            messagebox.showerror("Error al generar autómata", str(exc))
+            # Evitar conservar un diagrama anterior si falla la generación.
+            self.current_dfa = None
+            self.current_core_dfa = None
+            self.current_regex = None
+            self.canvas.delete("all")
+
+            self.set_output(
+                self.automata_output,
+                "No se pudo generar el autómata.\n"
+                f"Detalle: {exc}"
+            )
+
+            self.log_event(
+                "ERROR",
+                "AUTÓMATA",
+                "No se pudo generar el autómata",
+                f"Regex={expr} | Error={exc}"
+            )
+
+            messagebox.showerror(
+                "Error al generar autómata",
+                str(exc)
+            )
+
         self.refresh_stats()
         self.refresh_logs()
 
+        
     def validate_automaton(self):
-        if self.current_dfa is None:
-            messagebox.showwarning("Autómata requerido", "Primero genera el AFD mínimo.")
+        expr = self.automata_entry.get().strip()
+        value = self.automata_test.get().strip()
+
+        # Comprobar que exista un AFD generado.
+        if (
+            self.current_dfa is None
+            or self.current_core_dfa is None
+            or self.current_regex is None
+        ):
+            self.canvas.delete("all")
+
+            self.set_output(
+                self.automata_output,
+                "No hay un AFD generado.\n"
+                "Genera el AFD mínimo antes de validar."
+            )
+
+            messagebox.showwarning(
+                "Autómata requerido",
+                "Primero genera el AFD mínimo."
+            )
             return
-        value = self.automata_test.get()
-        # La validación se realiza con el simulador de AFD que ya usa la Entrega 1.
+
+        # Evitar validar con un AFD de una expresión anterior.
+        if expr != self.current_regex:
+            self.canvas.delete("all")
+
+            self.current_dfa = None
+            self.current_core_dfa = None
+            self.current_regex = None
+
+            self.set_output(
+                self.automata_output,
+                "La expresión regular ha cambiado.\n\n"
+                "Genera nuevamente el AFD mínimo "
+                "antes de validar."
+            )
+
+            self.log_event(
+                "WARNING",
+                "AUTÓMATA",
+                "Validación cancelada: expresión regular modificada",
+                (
+                    f"Regex actual={expr} | "
+                    "Motivo=El AFD debe generarse nuevamente"
+                )
+            )
+
+            messagebox.showwarning(
+                "Debe generar un nuevo AFD",
+                "La expresión regular cambió.\n\n"
+                "Se limpió el diagrama anterior. "
+                "Genera el AFD mínimo nuevamente "
+                "antes de validar."
+            )
+
+            self.refresh_stats()
+            self.refresh_logs()
+            return
+
+        # Ejecutar la validación con el AFD correspondiente.
         from contextlib import redirect_stdout
         import io
+
         salida_simulador = io.StringIO()
-        with redirect_stdout(salida_simulador):
-            ok = SimuladorAFD(self.current_core_dfa).simular(value)
-        self.set_output(
-            self.automata_output,
-            f"Cadena: {value}\nResultado: {'ACEPTADA' if ok else 'RECHAZADA'}"
-            + "\n\n" + "\n".join(transition_lines(self.current_dfa))
-        )
-        self.log_event("INFO" if ok else "WARNING", "AUTÓMATA",
-                       f"Cadena {'aceptada' if ok else 'rechazada'} por el AFD",
-                       f"Cadena={value}")
+
+        try:
+            with redirect_stdout(salida_simulador):
+                ok = SimuladorAFD(
+                    self.current_core_dfa
+                ).simular(value)
+
+            resultado = "ACEPTADA" if ok else "RECHAZADA"
+
+            # Mostrar resultado y conservar las transiciones del AFD.
+            self.set_output(
+                self.automata_output,
+                f"Regex: {expr}\n"
+                f"Cadena: {value}\n"
+                f"Resultado: {resultado}\n\n"
+                "TRANSICIONES DEL AFD MÍNIMO:\n"
+                + "\n".join(
+                    transition_lines(self.current_dfa)
+                )
+            )
+
+            # Registrar expresión, cadena y resultado.
+            self.log_event(
+                "INFO" if ok else "WARNING",
+                "AUTÓMATA",
+                f"Validación con AFD: {resultado}",
+                (
+                    f"Regex={expr} | "
+                    f"Cadena={value} | "
+                    f"Resultado={resultado}"
+                )
+            )
+
+        except Exception as exc:
+            self.log_event(
+                "ERROR",
+                "AUTÓMATA",
+                "Error al validar con AFD",
+                (
+                    f"Regex={expr} | "
+                    f"Cadena={value} | "
+                    f"Error={exc}"
+                )
+            )
+
+            messagebox.showerror(
+                "Error de validación",
+                str(exc)
+            )
+
         self.refresh_stats()
         self.refresh_logs()
+
 
     def draw_automaton(self, dfa):
         self.canvas.delete("all")
