@@ -412,7 +412,7 @@ class RegexLabApp(tk.Tk):
             messagebox.showwarning(
                 "Debe generar un nuevo AFD",
                 "La expresión regular cambió.\n\n"
-                "Se limpió el diagrama anterior. "
+              
                 "Genera el AFD mínimo nuevamente "
                 "antes de validar."
             )
